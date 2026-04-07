@@ -502,6 +502,7 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
           <div style="display:flex;gap:8px">
             <button id="btn-hm" onclick="toggleHeatmap()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:7px;font-size:12px;cursor:pointer">🔥 Heatmap CM</button>
             <button onclick="toggleCluster()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:7px;font-size:12px;cursor:pointer">📍 Cluster</button>
+            <button id="btn-tr-vis" onclick="toggleMarkers()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:7px;font-size:12px;cursor:pointer">🔌 ซ่อนหม้อแปลง</button>
           </div>
         </div>
         <div class="card" style="padding:10px;margin-bottom:12px">
@@ -594,26 +595,20 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
         </div>
       </div>
 
-      <!-- CM PRIORITY TABLE -->
-      <div class="card" style="margin-top:16px">
-        <div class="ctitle" style="justify-content:space-between;align-items:center">
-          <span>📋 ลำดับความสำคัญ CM จากความถี่เหตุขัดข้อง (Top 15)</span>
-          <span style="font-size:11px;color:var(--muted)">ข้อมูล CM จริง 18 เดือน</span>
-        </div>
-        <div class="tt-wrap">
-          <table class="tt" id="cm-priority-tbl">
-            <thead><tr>
-              <th>ลำดับ</th><th>MEA No.</th><th>รวม CM</th>
-              <th>สูงสุด/เดือน</th><th>เดือนล่าสุด</th><th>ระดับความเสี่ยง</th><th>แนะนำ</th>
-            </tr></thead>
-            <tbody id="cm-priority-body"></tbody>
-          </table>
-        </div>
-      </div>
 
       <!-- ANALYTICS -->
       <div id="pg-an" class="ps">
-        <h2 style="font-size:19px;font-weight:800;margin-bottom:18px">📈 ค่าพารามิเตอร์ระบบ (Real Time)</h2>
+        <h2 style="font-size:19px;font-weight:800;margin-bottom:14px">📈 ค่าพารามิเตอร์ระบบ (Real Time)</h2>
+        <!-- Transformer Selector -->
+        <div class="card" style="margin-bottom:14px;padding:12px 16px">
+          <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap">
+            <span style="font-size:12px;font-weight:700;color:var(--muted);padding-top:6px;white-space:nowrap">🔌 เลือกหม้อแปลง:</span>
+            <div id="tr-sel-btns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+          </div>
+          <div id="tr-sel-info" style="margin-top:10px;font-size:12px;color:var(--muted);padding-top:8px;border-top:1px solid var(--border)"></div>
+        </div>
+        <!-- Live Status Bar -->
+        <div id="live-status-bar" style="margin-bottom:14px"></div>
         <div class="g2">
           <div class="card"><div class="ctitle">⚡ แรงดันไฟฟ้า – Realtime</div><div class="ch-lg"><canvas id="v-ch"></canvas></div></div>
           <div class="card"><div class="ctitle">🔄 กระแสไฟฟ้า – Realtime</div><div class="ch-lg"><canvas id="i-ch"></canvas></div></div>
@@ -751,7 +746,15 @@ function st(t){
   return w>10?'d':w>5?'w':'n';
 }
 function stLabel(s){return s==='d'?'🔴 อันตราย':s==='w'?'⚠️ เฝ้าระวัง':'✅ ปกติ'}
-function stColor(s){return s==='d'?'rgba(160,0,0,0.95)':s==='w'?'rgba(200,0,0,0.70)':'rgba(210,0,0,0.40)'}
+function stColor(s){return s==='d'?'rgba(231,76,60,0.92)':s==='w'?'rgba(230,126,34,0.88)':'rgba(39,174,96,0.85)'}
+// Real-time threshold-based status: checks live v/i values against MIN/MAX bounds
+function realtimeStatus(vVal,iVal,tr){
+  const iMax=parseFloat((tr.kva*1.5).toFixed(1));
+  if(vVal<371||vVal>410||iVal>iMax) return 'd';
+  return 'n';
+}
+function realtimeLabel(s){return s==='d'?'🔴 อันตราย — ค่าเกินขอบเขต':'✅ ปกติ — ค่าอยู่ในเกณฑ์'}
+function realtimeColor(s){return s==='d'?'#e74c3c':'#27ae60'}
 function vPct(t){return (t.v_r-t.v_m)/t.v_r*100}
 function iPct(t){return (t.i_m-t.i_r)/t.i_r*100}
 function tPct(t){return (t.t_m-t.t_a)/t.t_a*100}
@@ -778,6 +781,7 @@ function logout(){document.getElementById('dp').style.display='none';document.ge
 let mapInited=false, donut=null, liveCharts={}, heatLayer=null, clusterLayer=null, allMarkersLayer=null;
 let heatmapOn=false, clusterOn=true;
 let liveData={v:[],i:[],t:[],an:[],al:[],labels:[]};
+let selectedTRIdx=0;
 
 function init(){
   updateTime();
@@ -977,12 +981,12 @@ function initMap(){
       const ms=c.getAllChildMarkers();
       const d=ms.filter(m=>m.options.trStatus===2).length;
       const w=ms.filter(m=>m.options.trStatus===1).length;
-      const col=d>0?'rgba(160,0,0,0.95)':w>0?'rgba(200,0,0,0.70)':'rgba(210,0,0,0.42)';
-      const txtCol=d>0?'#fff':w>0?'#fff':'#8b0000';return L.divIcon({html:`<div style="background:${col};color:${txtCol};border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.3);border:2px solid rgba(160,0,0,0.4)">${c.getChildCount()}</div>`,iconSize:[40,40]});
+      const col=d>0?'rgba(231,76,60,0.92)':w>0?'rgba(230,126,34,0.88)':'rgba(39,174,96,0.85)';
+      const txtCol='#fff';return L.divIcon({html:`<div style="background:${col};color:${txtCol};border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.3);border:2px solid rgba(160,0,0,0.4)">${c.getChildCount()}</div>`,iconSize:[40,40]});
     }
   });
 
-  const cols=['rgba(200,0,0,0.35)','rgba(200,0,0,0.65)','rgba(180,0,0,0.92)'];
+  const cols=['rgba(39,174,96,0.80)','rgba(230,126,34,0.85)','rgba(231,76,60,0.92)'];
   window._mkByMea={};
   TR_DATA.forEach(r=>{
     const col=cols[r[2]];
@@ -1092,9 +1096,101 @@ function toggleCluster(){
   if(clusterOn){window._map.removeLayer(clusterLayer);clusterOn=false;}
   else{clusterLayer.addTo(window._map);clusterOn=true;}
 }
+let markersVisible=true;
+function toggleMarkers(){
+  const btn=document.getElementById('btn-tr-vis');
+  if(markersVisible){
+    window._map.removeLayer(clusterLayer);
+    markersVisible=false;
+    btn.textContent='🔌 แสดงหม้อแปลง';
+    btn.style.background='#1a3a2a';
+    btn.style.borderColor='#27ae60';
+    btn.style.color='#27ae60';
+    clusterOn=false;
+  } else {
+    clusterLayer.addTo(window._map);
+    markersVisible=true;
+    btn.textContent='🔌 ซ่อนหม้อแปลง';
+    btn.style.background='var(--bg3)';
+    btn.style.borderColor='var(--border)';
+    btn.style.color='var(--text)';
+    clusterOn=true;
+  }
+}
 function flyTo(lat,lon){
   nav('mp',document.querySelectorAll('.sb-i')[2]);
   setTimeout(()=>{if(!mapInited){initMap();}window._map.setView([lat,lon],17);},200);
+}
+
+// ══════════ TR SELECTOR (Real Time) ══════════
+function buildTRSelector(){
+  const wrap=document.getElementById('tr-sel-btns');
+  if(!wrap)return;
+  wrap.innerHTML=SIM_TRS.map((tr,i)=>{
+    const s=realtimeStatus(tr.v_m,tr.i_m,tr);
+    const col=s==='d'?'#e74c3c':'#27ae60';
+    const bg=s==='d'?'rgba(231,76,60,0.12)':'rgba(39,174,96,0.12)';
+    const active=i===selectedTRIdx;
+    const badge=s==='d'?'🔴':'🟢';
+    return `<button id="trs-btn-${i}" onclick="selectTR(${i})" style="padding:5px 11px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid ${active?col:'var(--border)'};background:${active?bg:'var(--bg3)'};color:${active?col:'var(--text)'};transition:all .2s">${badge} ${tr.id} · ${tr.mea}</button>`;
+  }).join('');
+  updateTRInfo();
+}
+function updateTRInfo(){
+  const tr=SIM_TRS[selectedTRIdx];
+  const iMax=parseFloat((tr.kva*1.5).toFixed(1));
+  const s=realtimeStatus(tr.v_m,tr.i_m,tr);
+  const col=realtimeColor(s);
+  const el=document.getElementById('tr-sel-info');
+  if(!el)return;
+  el.innerHTML=`<span style="margin-right:14px">📍 Station: <b>${tr.station}</b></span><span style="margin-right:14px">⚡ ${tr.kva} kVA</span><span style="margin-right:14px">🏭 ${tr.manuf}</span><span style="margin-right:14px">Feeder: <b>${tr.feeder}</b></span><span style="margin-right:14px">V rated: <b>${tr.v_r} V</b> | In: <b>${tr.i_r} A</b></span><span style="margin-right:14px">V range: <b style="color:#e67e22">371–410 V</b></span><span style="margin-right:14px">I MAX: <b style="color:#e74c3c">${iMax} A</b> (kVA×1.5)</span><span style="font-weight:700;color:${col}">${realtimeLabel(s)}</span>`;
+}
+function selectTR(idx){
+  selectedTRIdx=idx;
+  // Update button styles
+  SIM_TRS.forEach((_,i)=>{
+    const btn=document.getElementById('trs-btn-'+i);if(!btn)return;
+    const s=realtimeStatus(SIM_TRS[i].v_m,SIM_TRS[i].i_m,SIM_TRS[i]);
+    const col=s==='d'?'#e74c3c':'#27ae60';
+    const bg=s==='d'?'rgba(231,76,60,0.12)':'rgba(39,174,96,0.12)';
+    if(i===idx){btn.style.borderColor=col;btn.style.background=bg;btn.style.color=col;}
+    else{btn.style.borderColor='var(--border)';btn.style.background='var(--bg3)';btn.style.color='var(--text)';}
+  });
+  updateTRInfo();
+  // Rebuild liveData based on selected transformer
+  const tr=SIM_TRS[idx];
+  const iMax=parseFloat((tr.kva*1.5).toFixed(1));
+  const anB=liveAnBase(tr), alB=liveAlBase(tr);
+  liveData.labels=[];liveData.v=[];liveData.i=[];liveData.t=[];liveData.an=[];liveData.al=[];
+  const now2=Date.now();
+  for(let j=19;j>=0;j--){
+    const ts=new Date(now2-j*15000);
+    liveData.labels.push(ts.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'}));
+    liveData.v.push(parseFloat((tr.v_m+(Math.random()-.5)*8).toFixed(1)));
+    liveData.i.push(parseFloat((tr.i_m+(Math.random()-.5)*12).toFixed(1)));
+    liveData.t.push(parseFloat((tr.t_m+(Math.random()-.5)*1.5).toFixed(1)));
+    liveData.an.push(parseFloat((anB+Math.random()*0.18).toFixed(3)));
+    liveData.al.push(parseFloat((alB+Math.random()*1.5).toFixed(2)));
+  }
+  // Update all live charts + threshold labels
+  const n=liveData.labels.length;
+  if(liveCharts.v){
+    liveCharts.v.data.labels=[...liveData.labels];
+    liveCharts.v.data.datasets[0].data=[...liveData.v];
+    liveCharts.v.data.datasets[1].data=Array(n).fill(410);
+    liveCharts.v.data.datasets[2].data=Array(n).fill(371);
+    liveCharts.v.update();
+  }
+  if(liveCharts.i){
+    liveCharts.i.data.labels=[...liveData.labels];
+    liveCharts.i.data.datasets[0].data=[...liveData.i];
+    liveCharts.i.data.datasets[1].label='MAX kVA×1.5 ('+iMax+' A)';
+    liveCharts.i.data.datasets[1].data=Array(n).fill(iMax);
+    liveCharts.i.update();
+  }
+  if(liveCharts.t){liveCharts.t.data.labels=[...liveData.labels];liveCharts.t.data.datasets[0].data=[...liveData.t];liveCharts.t.update();}
+  if(liveCharts.an){liveCharts.an.data.labels=[...liveData.labels];liveCharts.an.data.datasets[0].data=[...liveData.an];liveCharts.an.data.datasets[1].data=[...liveData.al];liveCharts.an.update();}
+  updateLiveStatus();
 }
 
 // ══════════ CHARTS ══════════
@@ -1192,16 +1288,21 @@ function buildHeatmapTable(){
 }
 
 // Live charts
+function liveAnBase(tr){const s=realtimeStatus(tr.v_m,tr.i_m,tr);return s==='d'?0.72:0.14;}
+function liveAlBase(tr){const s=realtimeStatus(tr.v_m,tr.i_m,tr);return s==='d'?3.2:0.4;}
+
 function initLiveCharts(){
   const now=Date.now();
+  const initTR=SIM_TRS[selectedTRIdx];
+  const anB=liveAnBase(initTR), alB=liveAlBase(initTR);
   for(let i=19;i>=0;i--){
     const t=new Date(now-i*15000);
     liveData.labels.push(t.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'}));
-    liveData.v.push(400+Math.random()*20);
-    liveData.i.push(300+Math.random()*70);
-    liveData.t.push(35+Math.random()*10);
-    liveData.an.push(parseFloat((0.3+Math.random()*0.55).toFixed(3)));
-    liveData.al.push(parseFloat((Math.random()*4).toFixed(2)));
+    liveData.v.push(parseFloat((initTR.v_m+(Math.random()-.5)*8).toFixed(1)));
+    liveData.i.push(parseFloat((initTR.i_m+(Math.random()-.5)*12).toFixed(1)));
+    liveData.t.push(parseFloat((initTR.t_m+(Math.random()-.5)*1.5).toFixed(1)));
+    liveData.an.push(parseFloat((anB+Math.random()*0.18).toFixed(3)));
+    liveData.al.push(parseFloat((alB+Math.random()*1.5).toFixed(2)));
   }
   const cfg=(id,label,data,color,yMin,yMax)=>new Chart(document.getElementById(id),{
     type:'line',
@@ -1219,22 +1320,19 @@ function initLiveCharts(){
       {label:'แรงดัน V', data:[...liveData.v],
        borderColor:'#58a6ff', backgroundColor:'rgba(88,166,255,0.10)',
        tension:.4, pointRadius:2, fill:true, borderWidth:2},
-      {label:'Max +5%', data:Array(liveData.labels.length).fill(436.8),
-       borderColor:'rgba(230,126,34,0.8)', backgroundColor:'transparent',
+      {label:'MAX 410 V', data:Array(liveData.labels.length).fill(410),
+       borderColor:'rgba(180,0,0,0.80)', backgroundColor:'transparent',
        borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false},
-      {label:'Min −5%', data:Array(liveData.labels.length).fill(395.2),
-       borderColor:'rgba(230,126,34,0.8)', backgroundColor:'transparent',
-       borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false},
-      {label:'Max −10%', data:Array(liveData.labels.length).fill(374.4),
-       borderColor:'rgba(180,0,0,0.75)', backgroundColor:'transparent',
-       borderWidth:1.5, borderDash:[3,3], pointRadius:0, fill:false}
+      {label:'MIN 371 V', data:Array(liveData.labels.length).fill(371),
+       borderColor:'rgba(230,126,34,0.85)', backgroundColor:'transparent',
+       borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false}
     ]},
     options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
       plugins:{legend:{display:true, position:'top',
         labels:{color:'#6b7280', font:{size:10}, boxWidth:20, padding:8}}},
       scales:{
         x:{ticks:{color:'#8b949e', font:{size:9}, maxTicksLimit:8}, grid:{color:'#e5e7eb'}},
-        y:{ticks:{color:'#8b949e', font:{size:9}}, grid:{color:'#e5e7eb'}, min:365, max:445}
+        y:{ticks:{color:'#8b949e', font:{size:9}}, grid:{color:'#e5e7eb'}, min:355, max:425}
       }
     }
   });
@@ -1245,19 +1343,16 @@ function initLiveCharts(){
       {label:'กระแส A', data:[...liveData.i],
        borderColor:'#d29922', backgroundColor:'rgba(210,153,34,0.10)',
        tension:.4, pointRadius:2, fill:true, borderWidth:2},
-      {label:'Max +5%', data:Array(liveData.labels.length).fill(327.6),
-       borderColor:'rgba(230,126,34,0.8)', backgroundColor:'transparent',
-       borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false},
-      {label:'Max +10%', data:Array(liveData.labels.length).fill(343.2),
-       borderColor:'rgba(180,0,0,0.75)', backgroundColor:'transparent',
-       borderWidth:1.5, borderDash:[3,3], pointRadius:0, fill:false}
+      {label:'MAX kVA×1.5 ('+parseFloat((SIM_TRS[selectedTRIdx].kva*1.5).toFixed(1))+' A)', data:Array(liveData.labels.length).fill(parseFloat((SIM_TRS[selectedTRIdx].kva*1.5).toFixed(1))),
+       borderColor:'rgba(180,0,0,0.80)', backgroundColor:'transparent',
+       borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false}
     ]},
     options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
       plugins:{legend:{display:true, position:'top',
         labels:{color:'#6b7280', font:{size:10}, boxWidth:20, padding:8}}},
       scales:{
         x:{ticks:{color:'#8b949e', font:{size:9}, maxTicksLimit:8}, grid:{color:'#e5e7eb'}},
-        y:{ticks:{color:'#8b949e', font:{size:9}}, grid:{color:'#e5e7eb'}, min:255, max:395}
+        y:{ticks:{color:'#8b949e', font:{size:9}}, grid:{color:'#e5e7eb'}, min:150, max:420}
       }
     }
   });
@@ -1292,15 +1387,21 @@ function initLiveCharts(){
     }
   });
 
+  // Build TR selector buttons after charts are ready
+  buildTRSelector();
+  setTimeout(updateLiveStatus, 100);
+
   // Live update
   setInterval(()=>{
     const t=new Date();
+    const curTR=SIM_TRS[selectedTRIdx];
+    const anB=liveAnBase(curTR), alB=liveAlBase(curTR);
     liveData.labels.push(t.toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'}));
-    liveData.v.push(400+Math.random()*25);
-    liveData.i.push(300+Math.random()*80);
-    liveData.t.push(35+Math.random()*12);
-    liveData.an.push(parseFloat((0.3+Math.random()*0.55).toFixed(3)));
-    liveData.al.push(parseFloat((Math.random()*4).toFixed(2)));
+    liveData.v.push(parseFloat((curTR.v_m+(Math.random()-.5)*8).toFixed(1)));
+    liveData.i.push(parseFloat((curTR.i_m+(Math.random()-.5)*12).toFixed(1)));
+    liveData.t.push(parseFloat((curTR.t_m+(Math.random()-.5)*1.5).toFixed(1)));
+    liveData.an.push(parseFloat((anB+Math.random()*0.18).toFixed(3)));
+    liveData.al.push(parseFloat((alB+Math.random()*1.5).toFixed(2)));
     if(liveData.labels.length>30){liveData.labels.shift();liveData.v.shift();liveData.i.shift();liveData.t.shift();liveData.an.shift();liveData.al.shift();}
     ['v','i','t'].forEach(k=>{
       liveCharts[k].data.labels=[...liveData.labels];
@@ -1315,16 +1416,37 @@ function initLiveCharts(){
     }
     // Update threshold line lengths to match new label count
     const n=liveData.labels.length;
+    const iMax2=parseFloat((curTR.kva*1.5).toFixed(1));
     if(liveCharts.v&&liveCharts.v.data.datasets.length>1){
-      liveCharts.v.data.datasets[1].data=Array(n).fill(436.8);
-      liveCharts.v.data.datasets[2].data=Array(n).fill(395.2);
-      liveCharts.v.data.datasets[3].data=Array(n).fill(374.4);
+      liveCharts.v.data.datasets[1].data=Array(n).fill(410);
+      liveCharts.v.data.datasets[2].data=Array(n).fill(371);
     }
     if(liveCharts.i&&liveCharts.i.data.datasets.length>1){
-      liveCharts.i.data.datasets[1].data=Array(n).fill(327.6);
-      liveCharts.i.data.datasets[2].data=Array(n).fill(343.2);
+      liveCharts.i.data.datasets[1].data=Array(n).fill(iMax2);
     }
+    updateLiveStatus();
   },3000);
+}
+
+function updateLiveStatus(){
+  const el=document.getElementById('live-status-bar');
+  if(!el||!liveData.v.length)return;
+  const tr=SIM_TRS[selectedTRIdx];
+  const vLast=liveData.v[liveData.v.length-1];
+  const iLast=liveData.i[liveData.i.length-1];
+  const iMax=parseFloat((tr.kva*1.5).toFixed(1));
+  const s=realtimeStatus(vLast,iLast,tr);
+  const col=realtimeColor(s);
+  const vOK=vLast>=371&&vLast<=410;
+  const iOK=iLast<=iMax;
+  const vTag=vOK?`<span style="color:#27ae60">✅ ${vLast} V</span>`:`<span style="color:#e74c3c">⚠️ ${vLast} V (นอกช่วง 371–410 V)</span>`;
+  const iTag=iOK?`<span style="color:#27ae60">✅ ${iLast} A</span>`:`<span style="color:#e74c3c">⚠️ ${iLast} A (เกิน MAX ${iMax} A)</span>`;
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px 14px;border-radius:8px;border:2px solid ${col};background:${s==='d'?'rgba(231,76,60,0.07)':'rgba(39,174,96,0.07)'}">
+    <span style="font-weight:800;font-size:13px;color:${col}">${realtimeLabel(s)}</span>
+    <span style="color:var(--muted);font-size:12px">⚡ แรงดัน: ${vTag}</span>
+    <span style="color:var(--muted);font-size:12px">🔄 กระแส: ${iTag}</span>
+    <span style="font-size:11px;color:var(--muted);margin-left:auto">อัปเดต ${new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span>
+  </div>`;
 }
 
 // ══════════ NAVIGATION ══════════
@@ -1334,7 +1456,7 @@ function nav(name,el){
   document.querySelectorAll('.sb-i').forEach(s=>s.classList.remove('active'));
   document.getElementById('pg-'+name).classList.add('on');
   if(el) el.classList.add('active');
-  if(name==='hm'&&!hmChartsInited){setTimeout(()=>{initHeatmapCharts();hmChartsInited=true;buildCMPriority();},100);}
+  if(name==='hm'&&!hmChartsInited){setTimeout(()=>{initHeatmapCharts();hmChartsInited=true;},100);}
   if(name==='an'){setTimeout(()=>{window.dispatchEvent(new Event('resize'));},150);}
   if(name==='mp'){setTimeout(()=>{if(!mapInited){initMap();}else if(window._map){window._map.invalidateSize();}},200);}
   // sync bottom nav
