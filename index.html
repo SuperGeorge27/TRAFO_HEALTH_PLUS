@@ -453,6 +453,23 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
             <th>แรงดัน</th><th>กระแส</th><th>อุณหภูมิ</th><th>สถานะ</th><th>การแก้ไข</th>
           </tr></thead><tbody id="qtb"></tbody></table></div>
         </div>
+
+        <!-- PM/CM PRIORITY TABLE -->
+        <div class="card" style="margin-top:16px">
+          <div class="ctitle" style="justify-content:space-between;align-items:center">
+            <span>🛠️ ลำดับความสำคัญ PM / CM หม้อแปลง</span>
+            <span style="font-size:11px;color:var(--muted)">คำนวณจากค่าเบี่ยงเบนพารามิเตอร์</span>
+          </div>
+          <div class="tt-wrap">
+            <table class="tt" id="pm-priority-tbl">
+              <thead><tr>
+                <th>ลำดับ</th><th>MEA No.</th><th>Station</th>
+                <th>ค่าเบี่ยงเบนสูงสุด</th><th>ประเภทงาน</th><th>ความเร่งด่วน</th><th>คำแนะนำ</th>
+              </tr></thead>
+              <tbody id="pm-priority-body"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- TRANSFORMER LIST -->
@@ -484,7 +501,6 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
           <h2 style="font-size:19px;font-weight:800">🗺️ แผนที่หม้อแปลง 4,333 ตัว (เขตบางขุนเทียน)</h2>
           <div style="display:flex;gap:8px">
             <button id="btn-hm" onclick="toggleHeatmap()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:7px;font-size:12px;cursor:pointer">🔥 Heatmap CM</button>
-            <button id="btn-sim" onclick="toggleBlackout()" class="btn-sim off">⚡ จำลองไฟดับ</button>
             <button onclick="toggleCluster()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:7px 14px;border-radius:7px;font-size:12px;cursor:pointer">📍 Cluster</button>
           </div>
         </div>
@@ -565,16 +581,33 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
           <div style="overflow-x:auto"><table class="tt hm-table" id="hm-tbl"></table></div>
           <div style="margin-top:10px;display:flex;gap:6px;align-items:center;font-size:11px;color:var(--muted)">
             ระดับ CM:
-            <span style="background:#c0392b;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700">5+ อันตราย</span>
-            <span style="background:#e67e22;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700">3-4 สูง</span>
-            <span style="background:#f1c40f;color:#333;padding:2px 8px;border-radius:4px;font-weight:700">2 กลาง</span>
-            <span style="background:#27ae60;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700">1 ต่ำ</span>
+            <span style="background:rgba(180,0,0,0.92);color:#fff;padding:2px 8px;border-radius:4px;font-weight:700">5+ อันตราย</span>
+            <span style="background:rgba(200,0,0,0.65);color:#fff;padding:2px 8px;border-radius:4px;font-weight:700">3-4 สูง</span>
+            <span style="background:rgba(220,0,0,0.38);color:rgba(140,0,0,1);padding:2px 8px;border-radius:4px;font-weight:700">2 กลาง</span>
+            <span style="background:rgba(220,0,0,0.18);color:rgba(160,0,0,0.9);padding:2px 8px;border-radius:4px;font-weight:700">1 ต่ำ</span>
             <span style="background:var(--bg3);color:var(--muted);padding:2px 8px;border-radius:4px">0</span>
           </div>
         </div>
         <div class="card">
           <div class="ctitle">🌦️ Weather Risk ต่อหม้อแปลง (Top 10)</div>
           <div class="ch"><canvas id="wr-chart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- CM PRIORITY TABLE -->
+      <div class="card" style="margin-top:16px">
+        <div class="ctitle" style="justify-content:space-between;align-items:center">
+          <span>📋 ลำดับความสำคัญ CM จากความถี่เหตุขัดข้อง (Top 15)</span>
+          <span style="font-size:11px;color:var(--muted)">ข้อมูล CM จริง 18 เดือน</span>
+        </div>
+        <div class="tt-wrap">
+          <table class="tt" id="cm-priority-tbl">
+            <thead><tr>
+              <th>ลำดับ</th><th>MEA No.</th><th>รวม CM</th>
+              <th>สูงสุด/เดือน</th><th>เดือนล่าสุด</th><th>ระดับความเสี่ยง</th><th>แนะนำ</th>
+            </tr></thead>
+            <tbody id="cm-priority-body"></tbody>
+          </table>
         </div>
       </div>
 
@@ -588,6 +621,16 @@ body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);min-hei
         <div class="card">
           <div class="ctitle">🌡️ อุณหภูมิ + แนวโน้มเฝ้าระวัง – Realtime</div>
           <div style="position:relative;height:220px"><canvas id="t-ch"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="ctitle" style="display:flex;justify-content:space-between;align-items:center">
+            <span>📉 Avg Anomaly Score &amp; Alerts Trend – Realtime</span>
+            <span style="display:flex;gap:14px;font-size:11px;color:var(--muted)">
+              <span><span style="display:inline-block;width:18px;height:2px;background:#2563eb;vertical-align:middle;margin-right:4px"></span>Avg Anomaly Score</span>
+              <span><span style="display:inline-block;width:18px;height:0;border-top:2px dashed #e74c3c;vertical-align:middle;margin-right:4px"></span>Alerts Trend</span>
+            </span>
+          </div>
+          <div class="ch-lg"><canvas id="anomaly-ch"></canvas></div>
         </div>
       </div>
 
@@ -708,7 +751,7 @@ function st(t){
   return w>10?'d':w>5?'w':'n';
 }
 function stLabel(s){return s==='d'?'🔴 อันตราย':s==='w'?'⚠️ เฝ้าระวัง':'✅ ปกติ'}
-function stColor(s){return s==='d'?'var(--red)':s==='w'?'var(--yellow)':'var(--green)'}
+function stColor(s){return s==='d'?'rgba(160,0,0,0.95)':s==='w'?'rgba(200,0,0,0.70)':'rgba(210,0,0,0.40)'}
 function vPct(t){return (t.v_r-t.v_m)/t.v_r*100}
 function iPct(t){return (t.i_m-t.i_r)/t.i_r*100}
 function tPct(t){return (t.t_m-t.t_a)/t.t_a*100}
@@ -734,7 +777,7 @@ function logout(){document.getElementById('dp').style.display='none';document.ge
 // ══════════════════════════════════════════
 let mapInited=false, donut=null, liveCharts={}, heatLayer=null, clusterLayer=null, allMarkersLayer=null;
 let heatmapOn=false, clusterOn=true;
-let liveData={v:[],i:[],t:[],labels:[]};
+let liveData={v:[],i:[],t:[],an:[],al:[],labels:[]};
 
 function init(){
   updateTime();
@@ -748,6 +791,7 @@ function init(){
   buildAlertHistory();
   buildNotifyContent();
   document.getElementById('line-ts').textContent=new Date().toLocaleString('th-TH');
+  buildPMPriority();
 }
 
 function updateTime(){
@@ -933,12 +977,12 @@ function initMap(){
       const ms=c.getAllChildMarkers();
       const d=ms.filter(m=>m.options.trStatus===2).length;
       const w=ms.filter(m=>m.options.trStatus===1).length;
-      const col=d>0?'#f85149':w>0?'#d29922':'#3fb950';
-      return L.divIcon({html:`<div style="background:${col};color:#fff;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.5)">${c.getChildCount()}</div>`,iconSize:[40,40]});
+      const col=d>0?'rgba(160,0,0,0.95)':w>0?'rgba(200,0,0,0.70)':'rgba(210,0,0,0.42)';
+      const txtCol=d>0?'#fff':w>0?'#fff':'#8b0000';return L.divIcon({html:`<div style="background:${col};color:${txtCol};border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.3);border:2px solid rgba(160,0,0,0.4)">${c.getChildCount()}</div>`,iconSize:[40,40]});
     }
   });
 
-  const cols=['#3fb950','#d29922','#f85149'];
+  const cols=['rgba(200,0,0,0.35)','rgba(200,0,0,0.65)','rgba(180,0,0,0.92)'];
   window._mkByMea={};
   TR_DATA.forEach(r=>{
     const col=cols[r[2]];
@@ -1028,8 +1072,15 @@ function initMap(){
   });
 
   // Heatmap layer
-  heatLayer=L.heatLayer(HEATMAP_PTS,{radius:18,blur:15,maxZoom:17,max:1,
-    gradient:{0.2:'#ffffb2',0.4:'#fd8d3c',0.6:'#f03b20',0.8:'#bd0026',1:'#ff0000'}});
+  heatLayer=L.heatLayer(HEATMAP_PTS,{radius:28,blur:25,maxZoom:17,max:1,minOpacity:0.0,
+    gradient:{
+      0.0:'rgba(200,0,0,0)',
+      0.15:'rgba(210,0,0,0.12)',
+      0.35:'rgba(200,0,0,0.35)',
+      0.55:'rgba(190,0,0,0.58)',
+      0.75:'rgba(180,0,0,0.78)',
+      1.0:'rgba(160,0,0,0.94)'
+    }});
   window._map=map;
 }
 
@@ -1130,8 +1181,8 @@ function buildHeatmapTable(){
   TR_HEATMAP.forEach(tr=>{
     html+=`<tr><td style="text-align:left"><span onclick="goToTr('${tr.mea}')" style="color:var(--blue);font-weight:700;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;transition:opacity .15s" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'" title="ดูบนแผนที่">${tr.mea} 📍</span></td>`;
     tr.data.forEach(v=>{
-      const bg=v>=5?'#c0392b':v>=3?'#e67e22':v>=2?'#f1c40f':v>=1?'#27ae60':'transparent';
-      const c=v>=5?'#fff':v>=3?'#fff':v>=2?'#333':v>=1?'#fff':'var(--muted)';
+      const bg=v>=5?'rgba(180,0,0,0.92)':v>=3?'rgba(200,0,0,0.65)':v>=2?'rgba(220,0,0,0.38)':v>=1?'rgba(220,0,0,0.18)':'transparent';
+      const c=v>=5?'#fff':v>=3?'#fff':v>=2?'rgba(140,0,0,1)':v>=1?'rgba(160,0,0,0.9)':'var(--muted)';
       html+=`<td style="background:${bg};color:${c};font-weight:${v>0?700:400};border-radius:4px">${v||'—'}</td>`;
     });
     html+='</tr>';
@@ -1149,6 +1200,8 @@ function initLiveCharts(){
     liveData.v.push(400+Math.random()*20);
     liveData.i.push(300+Math.random()*70);
     liveData.t.push(35+Math.random()*10);
+    liveData.an.push(parseFloat((0.3+Math.random()*0.55).toFixed(3)));
+    liveData.al.push(parseFloat((Math.random()*4).toFixed(2)));
   }
   const cfg=(id,label,data,color,yMin,yMax)=>new Chart(document.getElementById(id),{
     type:'line',
@@ -1159,9 +1212,85 @@ function initLiveCharts(){
       scales:{x:{ticks:{color:'#8b949e',font:{size:9},maxTicksLimit:8},grid:{color:'#e5e7eb'}},
               y:{ticks:{color:'#8b949e',font:{size:9}},grid:{color:'#e5e7eb'},min:yMin,max:yMax}}}
   });
-  liveCharts.v=cfg('v-ch','แรงดัน V',liveData.v,'#58a6ff',380,430);
-  liveCharts.i=cfg('i-ch','กระแส A',liveData.i,'#d29922',260,380);
+  // Voltage chart with MIN/MAX threshold lines
+  liveCharts.v = new Chart(document.getElementById('v-ch'),{
+    type:'line',
+    data:{labels:[...liveData.labels], datasets:[
+      {label:'แรงดัน V', data:[...liveData.v],
+       borderColor:'#58a6ff', backgroundColor:'rgba(88,166,255,0.10)',
+       tension:.4, pointRadius:2, fill:true, borderWidth:2},
+      {label:'Max +5%', data:Array(liveData.labels.length).fill(436.8),
+       borderColor:'rgba(230,126,34,0.8)', backgroundColor:'transparent',
+       borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false},
+      {label:'Min −5%', data:Array(liveData.labels.length).fill(395.2),
+       borderColor:'rgba(230,126,34,0.8)', backgroundColor:'transparent',
+       borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false},
+      {label:'Max −10%', data:Array(liveData.labels.length).fill(374.4),
+       borderColor:'rgba(180,0,0,0.75)', backgroundColor:'transparent',
+       borderWidth:1.5, borderDash:[3,3], pointRadius:0, fill:false}
+    ]},
+    options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
+      plugins:{legend:{display:true, position:'top',
+        labels:{color:'#6b7280', font:{size:10}, boxWidth:20, padding:8}}},
+      scales:{
+        x:{ticks:{color:'#8b949e', font:{size:9}, maxTicksLimit:8}, grid:{color:'#e5e7eb'}},
+        y:{ticks:{color:'#8b949e', font:{size:9}}, grid:{color:'#e5e7eb'}, min:365, max:445}
+      }
+    }
+  });
+  // Current chart with MAX threshold lines
+  liveCharts.i = new Chart(document.getElementById('i-ch'),{
+    type:'line',
+    data:{labels:[...liveData.labels], datasets:[
+      {label:'กระแส A', data:[...liveData.i],
+       borderColor:'#d29922', backgroundColor:'rgba(210,153,34,0.10)',
+       tension:.4, pointRadius:2, fill:true, borderWidth:2},
+      {label:'Max +5%', data:Array(liveData.labels.length).fill(327.6),
+       borderColor:'rgba(230,126,34,0.8)', backgroundColor:'transparent',
+       borderWidth:1.5, borderDash:[5,4], pointRadius:0, fill:false},
+      {label:'Max +10%', data:Array(liveData.labels.length).fill(343.2),
+       borderColor:'rgba(180,0,0,0.75)', backgroundColor:'transparent',
+       borderWidth:1.5, borderDash:[3,3], pointRadius:0, fill:false}
+    ]},
+    options:{responsive:true, maintainAspectRatio:false, animation:{duration:300},
+      plugins:{legend:{display:true, position:'top',
+        labels:{color:'#6b7280', font:{size:10}, boxWidth:20, padding:8}}},
+      scales:{
+        x:{ticks:{color:'#8b949e', font:{size:9}, maxTicksLimit:8}, grid:{color:'#e5e7eb'}},
+        y:{ticks:{color:'#8b949e', font:{size:9}}, grid:{color:'#e5e7eb'}, min:255, max:395}
+      }
+    }
+  });
   liveCharts.t=cfg('t-ch','อุณหภูมิ °C',liveData.t,'#f85149',30,50);
+
+  // Anomaly + Alerts dual-line chart
+  liveCharts.an=new Chart(document.getElementById('anomaly-ch'),{
+    type:'line',
+    data:{
+      labels:[...liveData.labels],
+      datasets:[
+        {label:'Avg Anomaly Score',data:[...liveData.an],
+         borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.08)',
+         tension:.4,pointRadius:2,fill:true,borderWidth:2.5,
+         borderDash:[]},
+        {label:'Alerts Trend',data:[...liveData.al],
+         borderColor:'#e74c3c',backgroundColor:'transparent',
+         tension:.4,pointRadius:2,fill:false,borderWidth:2,
+         borderDash:[6,4],yAxisID:'y2'}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:{duration:300},
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#8b949e',font:{size:9},maxTicksLimit:8},grid:{color:'#e5e7eb'}},
+        y:{ticks:{color:'#2563eb',font:{size:9}},grid:{color:'#e5e7eb'},
+           min:0,max:1,title:{display:true,text:'Anomaly Score',color:'#2563eb',font:{size:9}}},
+        y2:{position:'right',ticks:{color:'#e74c3c',font:{size:9}},grid:{display:false},
+            min:0,max:5,title:{display:true,text:'Alerts',color:'#e74c3c',font:{size:9}}}
+      }
+    }
+  });
 
   // Live update
   setInterval(()=>{
@@ -1170,12 +1299,31 @@ function initLiveCharts(){
     liveData.v.push(400+Math.random()*25);
     liveData.i.push(300+Math.random()*80);
     liveData.t.push(35+Math.random()*12);
-    if(liveData.labels.length>30){liveData.labels.shift();liveData.v.shift();liveData.i.shift();liveData.t.shift();}
+    liveData.an.push(parseFloat((0.3+Math.random()*0.55).toFixed(3)));
+    liveData.al.push(parseFloat((Math.random()*4).toFixed(2)));
+    if(liveData.labels.length>30){liveData.labels.shift();liveData.v.shift();liveData.i.shift();liveData.t.shift();liveData.an.shift();liveData.al.shift();}
     ['v','i','t'].forEach(k=>{
       liveCharts[k].data.labels=[...liveData.labels];
       liveCharts[k].data.datasets[0].data=[...liveData[k]];
       liveCharts[k].update('none');
     });
+    if(liveCharts.an){
+      liveCharts.an.data.labels=[...liveData.labels];
+      liveCharts.an.data.datasets[0].data=[...liveData.an];
+      liveCharts.an.data.datasets[1].data=[...liveData.al];
+      liveCharts.an.update('none');
+    }
+    // Update threshold line lengths to match new label count
+    const n=liveData.labels.length;
+    if(liveCharts.v&&liveCharts.v.data.datasets.length>1){
+      liveCharts.v.data.datasets[1].data=Array(n).fill(436.8);
+      liveCharts.v.data.datasets[2].data=Array(n).fill(395.2);
+      liveCharts.v.data.datasets[3].data=Array(n).fill(374.4);
+    }
+    if(liveCharts.i&&liveCharts.i.data.datasets.length>1){
+      liveCharts.i.data.datasets[1].data=Array(n).fill(327.6);
+      liveCharts.i.data.datasets[2].data=Array(n).fill(343.2);
+    }
   },3000);
 }
 
@@ -1186,7 +1334,7 @@ function nav(name,el){
   document.querySelectorAll('.sb-i').forEach(s=>s.classList.remove('active'));
   document.getElementById('pg-'+name).classList.add('on');
   if(el) el.classList.add('active');
-  if(name==='hm'&&!hmChartsInited){setTimeout(()=>{initHeatmapCharts();hmChartsInited=true;},100);}
+  if(name==='hm'&&!hmChartsInited){setTimeout(()=>{initHeatmapCharts();hmChartsInited=true;buildCMPriority();},100);}
   if(name==='an'){setTimeout(()=>{window.dispatchEvent(new Event('resize'));},150);}
   if(name==='mp'){setTimeout(()=>{if(!mapInited){initMap();}else if(window._map){window._map.invalidateSize();}},200);}
   // sync bottom nav
@@ -1587,6 +1735,93 @@ function goToTr(mea){
 
     }, 400);
   }, 200);
+}
+
+
+// ══════════ PM/CM PRIORITY TABLES ══════════
+function buildPMPriority(){
+  // Score each transformer by max deviation %
+  const rows = SIM_TRS.map(t=>{
+    const vDev = Math.abs((t.v_r - t.v_m) / t.v_r * 100);
+    const iDev = Math.abs((t.i_m - t.i_r) / t.i_r * 100);
+    const tDev = Math.abs((t.t_m - t.t_a) / t.t_a * 100);
+    const maxDev = Math.max(vDev, iDev, tDev);
+    const param = maxDev===vDev?'แรงดัน':maxDev===iDev?'กระแส':'อุณหภูมิ';
+    const s = st(t);
+    return { t, maxDev, param, s, vDev, iDev, tDev };
+  }).sort((a,b)=>b.maxDev - a.maxDev);
+
+  const tbody = document.getElementById('pm-priority-body');
+  if(!tbody) return;
+  tbody.innerHTML = rows.map((r,i)=>{
+    const rank = i+1;
+    const isDanger = r.s==='d', isWarn = r.s==='w';
+    const taskType = isDanger ? 'CM ทันที' : isWarn ? 'PM เร่งด่วน' : 'PM ตามรอบ';
+    const urgency = isDanger
+      ? '<span style="background:rgba(180,0,0,0.92);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">🚨 เร่งด่วน</span>'
+      : isWarn
+      ? '<span style="background:rgba(200,0,0,0.50);color:#fff;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">⚠️ ภายใน 7 วัน</span>'
+      : '<span style="background:#e8f5e9;color:#2e7d32;padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">✅ ตามแผน</span>';
+    const advice = isDanger
+      ? 'ตรวจสอบ'+r.param+'ทันที, วางแผนซ่อม'
+      : isWarn
+      ? 'ตรวจสอบ'+r.param+', นัด PM ด่วน'
+      : 'PM ตามรอบปกติ 6 เดือน';
+    const rankStyle = rank===1
+      ? 'background:rgba(180,0,0,0.10);font-weight:800'
+      : rank<=3 ? 'background:rgba(200,0,0,0.05)' : '';
+    return `<tr style="${rankStyle}" onclick="openMo('${r.t.mea}')" style="cursor:pointer">
+      <td style="font-weight:800;text-align:center;font-size:15px">${rank}</td>
+      <td style="color:var(--blue);font-weight:700;cursor:pointer">${r.t.mea}</td>
+      <td style="font-size:11px;color:var(--muted)">${r.t.station}</td>
+      <td style="font-weight:700;color:${r.maxDev>10?'rgba(160,0,0,0.92)':r.maxDev>5?'rgba(200,0,0,0.65)':'#27ae60'}">
+        ${r.maxDev.toFixed(1)}% <span style="font-size:10px;font-weight:400">(${r.param})</span>
+      </td>
+      <td style="font-weight:600;color:${isDanger?'rgba(160,0,0,0.9)':isWarn?'rgba(200,0,0,0.65)':'#27ae60'}">${taskType}</td>
+      <td>${urgency}</td>
+      <td style="font-size:11px;color:var(--muted)">${advice}</td>
+    </tr>`;
+  }).join('');
+}
+
+function buildCMPriority(){
+  if(!window.TR_HEATMAP) return;
+  const tbody = document.getElementById('cm-priority-body');
+  if(!tbody) return;
+
+  // Calc total CM, max single month, last month value per transformer
+  const rows = TR_HEATMAP.map(tr=>{
+    const total = tr.data.reduce((s,v)=>s+v, 0);
+    const maxMonth = Math.max(...tr.data);
+    const lastMonth = tr.data[tr.data.length-1];
+    const recentAvg = tr.data.slice(-3).reduce((s,v)=>s+v,0)/3;
+    return { mea:tr.mea, total, maxMonth, lastMonth, recentAvg };
+  }).sort((a,b)=>b.total - a.total);
+
+  tbody.innerHTML = rows.map((r,i)=>{
+    const rank = i+1;
+    const risk = r.total>=6||r.maxMonth>=3
+      ? {label:'🔴 สูง', bg:'rgba(180,0,0,0.92)', color:'#fff'}
+      : r.total>=3
+      ? {label:'🟠 กลาง', bg:'rgba(200,0,0,0.50)', color:'#fff'}
+      : {label:'🟡 ต่ำ', bg:'rgba(220,180,0,0.75)', color:'#333'};
+    const advice = r.total>=6||r.maxMonth>=3
+      ? 'วางแผน CM / ตรวจสอบโครงสร้างทันที'
+      : r.total>=3
+      ? 'กำหนดรอบ PM เชิงป้องกัน'
+      : 'ติดตามใกล้ชิด / PM ตามรอบ';
+    const trendIcon = r.lastMonth > 0 ? '📈' : r.recentAvg > 0.3 ? '➡️' : '📉';
+    const rankStyle = rank<=3 ? 'font-weight:800' : '';
+    return `<tr onclick="goToTr('${r.mea}')" style="cursor:pointer">
+      <td style="text-align:center;font-size:15px;${rankStyle}">${rank}</td>
+      <td style="color:var(--blue);font-weight:700">${r.mea} 📍</td>
+      <td style="font-weight:800;text-align:center;font-size:14px">${r.total}</td>
+      <td style="text-align:center">${r.maxMonth}</td>
+      <td style="text-align:center">${r.lastMonth} ${trendIcon}</td>
+      <td><span style="background:${risk.bg};color:${risk.color};padding:2px 10px;border-radius:10px;font-size:11px;font-weight:700">${risk.label}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${advice}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ── MOBILE FUNCTIONS ──────────────────────────────────────────
